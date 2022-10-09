@@ -1,96 +1,245 @@
-from email import message
-import telebot
-from telebot import types
 import pandas as pd
+import logging
 import random
+from telegram import InlineQueryResultArticle, InputTextMessageContent, InlineKeyboardButton, InlineKeyboardMarkup, Update
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, ConversationHandler
+from telegram.ext import MessageHandler, Filters, InlineQueryHandler
 
-bot = telebot.TeleBot('5540462908:AAGmh0-xWLtPdvYwFOjyy1CyDfMk_s4_LUU')
+TOKEN = '5540462908:AAGmh0-xWLtPdvYwFOjyy1CyDfMk_s4_LUU'
+updater = Updater(token=TOKEN)
+dispatcher_bot = updater.dispatcher
 
-chars = '+-/*!&$#?=@<>abcdefghijklnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890'
-length_id_user = 8
+# /start
+# def start(update, context):
+#     context.bot.send_message(chat_id=update.effective_chat.id, text='Hi, it\'s start')
 
-
-
-@bot.message_handler(commands=['start'])
-def start_message(message):
-    bot.send_message(message.chat.id, "Привет!\n")
-    markup=types.ReplyKeyboardMarkup(resize_keyboard=True)
-    item = types.KeyboardButton('Регистрация')
-    item_2 = types.KeyboardButton('Цены')
-    markup.add(item, item_2)
-    # markup.add(item_2)
-    bot.send_message(message.chat.id, "Выберите одну из кнопок.", reply_markup=markup)
-
-@bot.message_handler(commands=['reg'])
-def start(message):
-    bot.send_message(message.from_user.id, "Как тебя зовут?")
-    bot.register_next_step_handler(message, get_name); #следующий шаг – функция get_name
-
-name = ''
-surname = ''
-age = 0
-
-
-def get_name(message): #получаем фамилию
-    global name
-    name = message.text
-    bot.send_message(message.from_user.id, 'Какая у тебя фамилия?')
-    bot.register_next_step_handler(message, get_surname)
-
-def get_surname(message):
-    global surname
-    surname = message.text
-    bot.send_message(message.from_user.id, 'Сколько тебе лет?')
-    bot.register_next_step_handler(message, get_age)
-
-def get_age(message):
-    global age
-    while age == 0:
-        try:
-                age = int(message.text) #проверяем, что возраст введен корректно
-        except Exception:
-                bot.send_message(message.from_user.id, 'Цифрами, пожалуйста, введите еще раз')
-                age = 0
-                bot.register_next_step_handler(message, get_age)
-    keyboard = types.InlineKeyboardMarkup() #наша клавиатура
-    key_yes = types.InlineKeyboardButton(text='Да', callback_data='yes') #кнопка «Да»
-    keyboard.add(key_yes) #добавляем кнопку в клавиатуру
-    key_no= types.InlineKeyboardButton(text='Нет', callback_data='no')
-    keyboard.add(key_no)
-    question = f'Тебе {str(age)} лет, тебя зовут {name} {surname}?'
-    bot.send_message(message.from_user.id, text=question, reply_markup=keyboard)
-
-@bot.callback_query_handler(func=lambda call: True)
-def callback_worker(call):
-    global age
-    if call.data == "yes": #call.data это callback_data, которую мы указали при объявлении кнопки
-        
-        df = pd.read_csv("test_data.csv", index_col=0)
-        id_user = ''
-        for i in range(length_id_user):
-            id_user += random.choice(chars)
-        df = df.append({'id': id_user, 'name': name, 'surname': surname, 'age': age}, ignore_index=True)
-        df.to_csv('test_data.csv')
-        age = 0
-        bot.send_message(call.message.chat.id, 'Запомню :)')
-    elif call.data == "no":
-        bot.send_message(call.message.chat.id, 'Не запомню :)')
-        age = 0
-
-@bot.message_handler(content_types=['text'])
-def some_message(message):
-    if message.text == 'some':
-        bot.send_message(message.from_user.id, 'Нажми /start или /reg')
-    elif message.text == 'Регистрация':
-        markup=types.ReplyKeyboardMarkup(resize_keyboard=True)
-        # item1=types.KeyboardButton("Кнопка 2")
-        # markup.add(item1)
-        bot.send_message(message.chat.id,'Выберите что вам надо', reply_markup=markup)
-        start(message)
+# def registration(update, context):
+#     context.bot.send_message(chat_id=update.effective_chat.id, text='You\'r name?')
+#     context.bot.send_message(chat_id=update.effective_chat.id, text='You\'r name?')
+#     context.bot.send_message(chat_id=update.effective_chat.id, text='You\'r name?')
 
 
 
+# def echo(update, context):
+#     text = f'ECHO {update.message.text}'
+#     context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
-bot.infinity_polling()
-        
+# def unknown(update, context):
+#     context.bot.send_message(chat_id=update.effective_chat.id, text='Sorry, can\'t understand you')
+
+# start_handler = CommandHandler('start', start)
+# dispatcher_bot.add_handler(start_handler)
+# registration_handler = CommandHandler('reg', registration)
+# dispatcher_bot.add_handler(registration_handler)
+# echo_handler = MessageHandler(Filters.text & (~Filters.command), echo)
+# dispatcher_bot.add_handler(echo_handler)
+# unlnown_handler = MessageHandler(Filters.command, unknown)
+# dispatcher_bot.add_handler(unlnown_handler)
+
+
+
+# def start(update, _):
+#     keyboard = [
+#         [
+#             InlineKeyboardButton("Option 1", callback_data='1'),
+#             InlineKeyboardButton("Option 2", callback_data='2'),
+#         ],
+#         [InlineKeyboardButton("Option 3", callback_data='Adventure')],
+#     ]
+#     reply_markup = InlineKeyboardMarkup(keyboard)
+#     update.message.reply_text('Пожалуйста, выберите:', reply_markup=reply_markup)
+
+
+# def button(update, _):
+#     query = update.callback_query
+#     variant = query.data
+
+#     # `CallbackQueries` требует ответа, даже если 
+#     # уведомление для пользователя не требуется, в противном
+#     #  случае у некоторых клиентов могут возникнуть проблемы. 
+#     # смотри https://core.telegram.org/bots/api#callbackquery.
+#     query.answer()
+#     # редактируем сообщение, тем самым кнопки 
+#     # в чате заменятся на этот ответ.
+#     query.edit_message_text(text=f"Выбранный вариант: {variant}")
+
+# def help_command(update, _):
+#     update.message.reply_text("Используйте `/start` для тестирования.")
+
+# updater.dispatcher.add_handler(CommandHandler('start', start))
+# updater.dispatcher.add_handler(CallbackQueryHandler(button))
+# updater.dispatcher.add_handler(CommandHandler('help', help_command))
+
+
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO
+)
+
+logger = logging.getLogger(__name__)
+# Этапы/состояния разговора
+FIRST, SECOND = range(2)
+# Данные обратного вызова
+ONE, TWO, THREE, FOUR = range(4)
+
+
+def start(update, _):
+    """Вызывается по команде `/start`."""
+    # Получаем пользователя, который запустил команду `/start`
+    user = update.message.from_user
+    logger.info("Пользователь %s начал разговор", user.first_name)
+    # Создаем `InlineKeyboard`, где каждая кнопка имеет 
+    # отображаемый текст и строку `callback_data`
+    # Клавиатура - это список строк кнопок, где каждая строка, 
+    # в свою очередь, является списком `[[...]]`
+    keyboard = [
+        [
+            InlineKeyboardButton("1", callback_data=str(ONE)),
+            InlineKeyboardButton("2", callback_data=str(TWO)),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    # Отправляем сообщение с текстом и добавленной клавиатурой `reply_markup`
+    update.message.reply_text(
+        text="Запустите обработчик, выберите маршрут", reply_markup=reply_markup
+    )
+    # Сообщаем `ConversationHandler`, что сейчас состояние `FIRST`
+    return FIRST
+
+
+def start_over(update, _):
+    """Тот же текст и клавиатура, что и при `/start`, но не как новое сообщение"""
+    # Получаем `CallbackQuery` из обновления `update`
+    query = update.callback_query
+    # На запросы обратного вызова необходимо ответить, 
+    # даже если уведомление для пользователя не требуется.
+    # В противном случае у некоторых клиентов могут возникнуть проблемы.
+    query.answer()
+    keyboard = [
+        [
+            InlineKeyboardButton("1", callback_data=str(ONE)),
+            InlineKeyboardButton("2", callback_data=str(TWO)),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+   # Отредактируем сообщение, вызвавшее обратный вызов.
+   # Это создает ощущение интерактивного меню.
+    query.edit_message_text(
+        text="Выберите маршрут", reply_markup=reply_markup
+    )
+    # Сообщаем `ConversationHandler`, что сейчас находимся в состоянии `FIRST`
+    return FIRST
+
+
+def one(update, _):
+    """Показ нового выбора кнопок"""
+    query = update.callback_query
+    query.answer()
+    keyboard = [
+        [
+            InlineKeyboardButton("3", callback_data=str(THREE)),
+            InlineKeyboardButton("4", callback_data=str(FOUR)),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    query.edit_message_text(
+        text="Вызов `CallbackQueryHandler`, выберите маршрут", reply_markup=reply_markup
+    )
+    return FIRST
+
+
+def two(update, _):
+    """Показ нового выбора кнопок"""
+    query = update.callback_query
+    query.answer()
+    keyboard = [
+        [
+            InlineKeyboardButton("1", callback_data=str(ONE)),
+            InlineKeyboardButton("3", callback_data=str(THREE)),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    query.edit_message_text(
+        text="Второй CallbackQueryHandler", reply_markup=reply_markup
+    )
+    return FIRST
+
+
+def three(update, _):
+    """Показ выбора кнопок"""
+    query = update.callback_query
+    query.answer()
+    keyboard = [
+        [
+            InlineKeyboardButton("Да, сделаем это снова!", callback_data=str(ONE)),
+            InlineKeyboardButton("Нет, с меня хватит ...", callback_data=str(TWO)),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    query.edit_message_text(
+        text="Третий CallbackQueryHandler. Начать сначала?", reply_markup=reply_markup
+    )
+    # Переход в состояние разговора `SECOND`
+    return SECOND
+
+
+def four(update, _):
+    """Показ выбора кнопок"""
+    query = update.callback_query
+    query.answer()
+    keyboard = [
+        [
+            InlineKeyboardButton("2", callback_data=str(TWO)),
+            InlineKeyboardButton("4", callback_data=str(FOUR)),
+        ]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    query.edit_message_text(
+        text="Четвертый CallbackQueryHandler, выберите маршрут", reply_markup=reply_markup
+    )
+    return FIRST
+
+
+def end(update, _):
+    """Возвращает `ConversationHandler.END`, который говорит 
+    `ConversationHandler` что разговор окончен"""
+    query = update.callback_query
+    query.answer()
+    query.edit_message_text(text="See you next time!")
+    return ConversationHandler.END
+
+
+dispatcher = updater.dispatcher
+
+# Настройка обработчика разговоров с состояниями `FIRST` и `SECOND`
+# Используем параметр `pattern` для передачи `CallbackQueries` с
+# определенным шаблоном данных соответствующим обработчикам
+# ^ - означает "начало строки"
+# $ - означает "конец строки"
+# Таким образом, паттерн `^ABC$` будет ловить только 'ABC'
+conv_handler = ConversationHandler(
+    entry_points=[CommandHandler('start', start)],
+    states={ # словарь состояний разговора, возвращаемых callback функциями
+        FIRST: [
+            CallbackQueryHandler(one, pattern='^' + str(ONE) + '$'),
+            CallbackQueryHandler(two, pattern='^' + str(TWO) + '$'),
+            CallbackQueryHandler(three, pattern='^' + str(THREE) + '$'),
+            CallbackQueryHandler(four, pattern='^' + str(FOUR) + '$'),
+        ],
+        SECOND: [
+            CallbackQueryHandler(start_over, pattern='^' + str(ONE) + '$'),
+            CallbackQueryHandler(end, pattern='^' + str(TWO) + '$'),
+        ],
+    },
+    fallbacks=[CommandHandler('start', start)],
+)
+
+# Добавляем `ConversationHandler` в диспетчер, который
+# будет использоваться для обработки обновлений
+dispatcher.add_handler(conv_handler)
+
+
+
+# Запуск бота
+updater.start_polling()
 
